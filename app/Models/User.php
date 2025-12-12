@@ -45,4 +45,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class)->latest('id');
+    }
 }
