@@ -16,6 +16,9 @@
         <a href="{{ route('home') }}" class="hover:text-gray-400">Home</a>
         <a href="{{ route('users.show', auth()->user()) }}" class="hover:text-gray-400">View Profile</a>
         <a href="{{ route('user.edit') }}" class="hover:text-gray-400">Edit Profile</a>
+        @can('admin-role')
+            <a href="{{ route('admin.dashboard') }}" class="hover:text-gray-400">Admin Dashboard</a>
+        @endcan
         <form method="POST" action="{{ route('logout') }}" class="inline">
             @csrf
             <button type="submit" class="hover:text-gray-400">Logout</button>
