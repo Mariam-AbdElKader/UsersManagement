@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Client\UpdateUserRequest;
+use App\Http\Resources\Client\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,7 @@ class UserController extends Controller
     public function index()
     {
         $users = User::get();
-        return view('client.users.index', compact('users'));
+        return UserResource::collection($users);
     }
 
     /**
@@ -23,16 +24,7 @@ class UserController extends Controller
      */
     public function show(user $user)
     {
-        return view('client.users.show', compact('user'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit()
-    {
-        $user = Auth::user();
-        return view('client.users.edit', compact('user'));
+        return $user->toResource(UserResource::class);
     }
 
     /**
@@ -49,6 +41,6 @@ class UserController extends Controller
         }
 
         $user->update($data);
-        return to_route('home')->with('success', 'Your profile has been updated successfully');
+        return $user->toResource(UserResource::class);
     }
 }

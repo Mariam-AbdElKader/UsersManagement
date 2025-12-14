@@ -2,19 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Auth\RegisterRequest;
+
 
 class AuthController extends Controller
 {
-
-    public function register()
-    {
-        return view('auth.register');
-    }
 
     public function store(RegisterRequest $request)
     {
@@ -25,16 +22,13 @@ class AuthController extends Controller
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
+        $token = $user->createToken('api-token')->plainTextToken;
 
-        return redirect()->route('home');
-    }
-
-    /**
-     * Show the login form.
-     */
-    public function login()
-    {
-        return view('auth.login');
+        return response()->json([
+            'message' => 'Registered successfully.',
+            'user' => $user,
+            'token' => $token,
+        ], Response::HTTP_CREATED);
     }
 
     /**
@@ -47,13 +41,12 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors([
-                'login' => 'The provided credentials do not match our records.',
-            ])->onlyInput('email');
+        if (!Auth::attempt($credentials)) {
+            return response()->json([
+                'message' => 'The provided credentials do not match our records.'
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $request->session()->regenerate();
         $user = Auth::user();
 
         $user->loginHistories()->create([
@@ -61,11 +54,13 @@ class AuthController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        if ($user->can('admin-role')) {
-            return redirect()->intended(route('admin.dashboard'));
-        }
+        $token = $user->createToken('api-token')->plainTextToken;
 
-        return redirect()->intended(route('home'));
+        return response()->json([
+            'message' => 'Authenticated successfully.',
+            'user' => $user,
+            'token' => $token,
+        ], Response::HTTP_OK);
     }
 
     /**
@@ -73,9 +68,13 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login');
+        $user = $request->user();
+
+        // Revoke the token that was used to authenticate the current request
+        $user->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully.'
+        ], Response::HTTP_OK);
     }
 }
